@@ -1,9 +1,7 @@
 # Human Is
 <b>Human Is</b> is a ChatGPT-powered party game where 5 chatroom slots are filled with 2 randomly selected human players plus 3 bots who desperately try to come off as humans. The winner is the player who correctly identifies the other human.
 
-Created by Itay Keren 
-
-Copyright (C) 2024 Untame (Keren Software)
+Created by [Itay Keren](https://untame.com/itay). Copyright (C) 2024 [Untame](https://untame.com) (Keren Software)
 
 ## Setup
 Create a .env file with the following info filled from an OpenAI account:
