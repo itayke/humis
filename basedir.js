@@ -1,0 +1,1 @@
+export const __basedir = import.meta.dirname;

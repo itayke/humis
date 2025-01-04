@@ -1,0 +1,534 @@
+<html>
+    <link rel="icon" type="image/png" href="assets/humis_favicon_128.png">
+    <body>
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <script src='https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js'></script>
+        <style>
+            html, body {
+                width: 100%;
+                height: 100%;
+                margin: 0px;
+                font-family: Tahoma, sans-serif;
+                font-size: 16px;
+            }
+            body {
+                background-image: none;
+                background-color: rgb(230, 227, 227);
+            }
+
+            ::-webkit-scrollbar {
+                width: 8px;
+            }
+
+            ::placeholder {
+                color: grey;
+                opacity: 0.5;
+            }
+
+
+            ::-webkit-scrollbar-track {
+                background: rgba(0, 0, 0, 0);
+            }
+
+            ::-webkit-scrollbar-thumb
+            {
+                background: rgba(0, 0, 0, 0.4);
+                border-radius: 0px;
+            }
+
+            .header {
+                display: flex;
+                width: 100%;
+                margin-top: 10px;
+                margin-bottom: 10px;
+                height: 100px;
+            }
+
+            .humisicon {
+                display: block;
+                width: 100px;
+                position: absolute;
+                left: 0;
+                right: 0;
+                margin: auto;
+            }
+
+            .topright {
+                color: #9c9c9c;
+                display: block;
+                margin-right: 0;
+                margin-left: auto;
+                padding-top: 30px;
+                width: 150px;
+                text-align: right;
+                font-size: 14;
+            }
+
+            .topleft {
+                color: #9c9c9c;
+                display: block;
+                margin-right: auto;
+                margin-left: 0;
+                padding-top: 22px;
+                width: 150px;
+                text-align: left;
+                font-size: 14;
+            }
+
+            #join { height: 50px; width: 300px; overflow: hidden; }
+            .button {
+                border: none;
+                color: white;
+                background-color: #8a8a8a;
+                text-align: center;
+                vertical-align: top;
+                text-decoration: none;
+                display: inline-block;
+                font-size: 16px;
+                height: 32px; 
+                white-space: nowrap;
+            }
+            .button:focus {
+                outline: none !important;
+            }
+            .button:active {
+                background-color: #777;
+            }
+
+            .chatinput {
+                height: 32px; 
+                background-color: #ffffff;
+                color: #4c4a4a;
+                font-size: 16px;
+                padding: 5px;
+                overflow: hidden;
+                resize: none;
+                border-style: none;
+            }
+            .chatinput:focus {
+                outline: none !important;
+            }
+
+            .chatinputcontainer {
+                display: flex;
+            }
+
+            .chatbox {
+                margin-bottom: 5px;
+                height: 500px;
+                color: #4c4a4a;
+                line-height: 1.5;
+                font-size: 16px;
+                border: #ccc solid 1px;
+                background-color: white;
+                padding: 5px;
+                overflow-x: hidden;
+                overflow-y: scroll;
+                resize: none;
+                border-style: none;
+            }
+            .chatbox:focus {
+                outline: none !important;
+            }
+
+            .container {
+                /*position: absolute;*/
+                /*height: 500px;*/
+                width: 95%;
+                max-width: 500px;
+                /*left: 50%;*/
+                margin-left: auto;
+                margin-right: auto;
+                top: 20px;
+            }
+            .gamebox {
+                /*position: absolute;*/
+                width: 100%;
+                /*left: -50%;*/
+                overflow: visible;
+            }
+
+            .chatarea {
+                /* position: absolute;
+                top: 20px; */
+                width: inherit;
+                margin-bottom: 5px;
+            }
+            .joinarea {
+                /* position: relative;
+                top: 20px; */
+                margin-bottom: 5px;
+                display: flex;
+            }
+            .continuebutton {
+                width: 150px;
+                margin: 5px;
+            }
+
+            .humisfooter {
+                color: #bfbebe;
+                display: block;
+                margin-right: auto;
+                margin-left: auto;
+                padding-top: 12px;
+                text-align: center;
+                font-size: 12;                
+            }
+
+            .muteIcon {
+                display: block;
+                width: 22px;
+                float: right;
+            }
+
+        </style>
+    </head>
+    <div class="container">
+
+        <div class="header">
+            <div class="topleft">
+                <b>Human Is</b> v0.13<br/>
+                Identify the human among the AI bots
+            </div>
+            <img src="assets/humis_logo_256.png" class="humisicon">
+            <div class="topright" id="stats"></div>
+        </div>
+
+        <div class="gamebox">
+
+    
+        <!-- <h1>Human Is</h1> -->
+        <div id="joindiv" class="joinarea">
+            <button style="width: 120px;" id="joinbutton" class="button">Join Game</button>
+            <input style="flex-grow:1; margin-left:5px;" type="text" class="chatinput" id="room" autocomplete="off" placeholder="Leave empty to join the next available room"/>
+            <p/>
+        </div>
+
+        <div style="display:none;" id="chatarea" class="chatarea">
+            <div id="chatbox" class="chatbox"></div>
+            <div style="display:none;" id="chatinputcontainer" class="chatinputcontainer">
+                <input style="flex-grow:1; margin-right:5px;" type="text" id="chatinput" class="chatinput" autocomplete="off"/>
+                <input style="width: 60px;" type='button' class='button' value='Send' id='sendchat' />
+            </div>
+        </div>
+
+        <div style="display:none;" id="continuearea" class="continuearea">
+            <center>
+                <input type='button' class='continuebutton button' value='Play Again' id='continuebutton' />
+            </center>
+        </div>
+
+        <div class="humisfooter">
+            <img class="muteIcon" id="muteIcon" src="assets/iconAudioOn.png"/>
+            <b>Human Is</b> © 2023 Itay Keren (Untame)<br/>
+            Built with NodeJS + OpenAI
+
+        </div>
+
+        <audio id="audioSend" src="assets/audioSend.wav"></audio>
+
+        <script src='/faye/client.js'></script>
+        <script>
+            var $chat = $('#chatinput');
+            var $room = $('#room');
+            var currentRoom = null;
+            var subscription = null;
+            var playerSlot;
+            var waitingForOpp = false;
+
+            const COLOR_SLOTS = [
+                "#7c216e",
+                "#26217c",
+                "#215c74",
+                "#567c21",
+                "#837314"
+            ];
+            const COLOR_WIN = "#1b9b1b";
+            const COLOR_LOSE = "#cb2b43";
+            const BGCOLOR_WIN = "#e1fde1";
+            const BGCOLOR_LOSE = "#ffe4e9";
+            const BGCOLOR_SYSTEM = "#e7e7e7";
+
+            const TEXT_JOINED_ROOM = "<i>Joining room {0}</i>"
+            const TEXT_WELCOME_PLAYER = "<i>Hello human, you are at chatroom slot <b>#{0}</b>!</i>";
+            const TEXT_WAIT_FOR_OPP = "<i>Please wait for another human to join...</i>";
+            const TEXT_PLAYER_JOINED = "<i>Another human joined!</i>";
+            const TEXT_SEPARATOR = "<hr/>";
+            const TEXT_GAME_START = 
+                "<i><b>Welcome to the chatroom!</b><br/>Introduce yourself, be friendly, and have some fun!<br/>" + 
+                "To identify the other human, type <b>Human is</b> and their number.</i>";
+            const TEXT_CHAT_MESSAGE = "<b style='color:{1};'>#{0}:</b> {2}"
+            const TEXT_PLAYER_DISCONNECTED = "<i>Human at slot <b>#{0}</b> disconnected. Please try another room.</i>";
+            const TEXT_ROOM_CLOSED = "<i>Idle room closed. Please try another room.</i>";
+            const TEXT_PLAYER_WON_YOU_HIT = "<i><b style='color:" + COLOR_WIN + ";'>You WIN!</b> Human at slot <b>#{0}</b> successfully identified.</i>";
+            const TEXT_PLAYER_LOST_YOU_MISS = "<i><b style='color:" + COLOR_LOSE + ";'>You LOSE.</b> You failed to identify the human at slot <b>#{0}</b>.</i>";
+            const TEXT_PLAYER_WON_OPP_MISS = "<i><b style='color:" + COLOR_WIN + ";'>You WIN!</b> Human at slot <b>#{0}</b> has misidentified you.</i>";
+            const TEXT_PLAYER_LOST_OPP_HIT = "<i><b style='color:" + COLOR_LOSE + ";'>You LOSE.</b> You were identified by the human at slot <b>#{0}</b>.</i>";
+
+            const STATS_TEXT = "<b>Plays</b> {0}<br/><b>Wins</b> {1}";
+
+            var ROOM_PREFIX = "/"; // "/humis_";
+
+            String.prototype.format = function() {
+                var content = this;
+                for (var i = 0; i < arguments.length; i++)
+                    content = content.replace('{' + i + '}', arguments[i]);
+                return content;
+            };
+
+            var muted = window.localStorage.getItem("Muted") == 'true';
+            updateMuteIcon();
+
+            function playAudioSend () { 
+                if (!muted)
+                    document.getElementById("audioSend").play(); 
+            }
+
+            //const addChatTextLine = (text, delay) => addChatText(text + "<br/>", delay);
+
+            function addChatText (text, delay, bgcolor) {
+                // console.log("Chat:", text, delay);
+                if (delay != undefined && delay > 0)
+                    setTimeout(() => addChatTextExec(text, bgcolor), delay);
+                else
+                    addChatTextExec(text, bgcolor);
+            }
+
+            function addChatTextExec (text, bgcolor)
+            {
+                var cb = $('#chatbox');
+                // Are we at the bottom of scroll before addding new text
+                var pfx = bgcolor ? "<div style=\"background-color:{0}\">".format(bgcolor) : "<div>";
+                var pushdown = cb[0].scrollTop + cb[0].clientHeight >= cb[0].scrollHeight - 10;
+                cb.append(pfx + text + "</div>");
+                if (pushdown)
+                    cb.scrollTop(cb[0].scrollHeight);
+            }
+
+            function updateMuteIcon () {
+                $('#muteIcon').attr("src", muted ? "assets/iconAudioOff.png" : "assets/iconAudioOn.png");
+            }
+
+            $('#muteIcon').on('click', null, function() {
+                muted = !muted;
+                updateMuteIcon();
+                playAudioSend();
+                window.localStorage.setItem("Muted", muted ? 'true' : 'false');
+            });
+
+            $('#sendchat').on('click', null, function() {
+                if (!currentRoom)
+                    return;
+
+                var chat = $.trim($chat.val());
+                $chat.val('');
+                if (chat.length == 0)
+                    return;
+
+                client.publish(ROOM_PREFIX + currentRoom, {
+                    op: "Chat",
+                    slot: playerSlot,
+                    text: chat
+                });
+            });
+
+            $("#joinbutton").on('click', null, function () {
+                var loc = window.location.pathname;
+                var dir = loc.substring(0, loc.lastIndexOf('/'));
+                var url = dir + "/dispatch";
+                console.log(url);
+                var message = {
+                    op: "joinReq",
+                    room: $room.val(),
+                    cid: clientId
+                };
+                var dataType = 'json';
+                $.ajax({
+                    type: 'POST',
+                    url: url,
+                    data: message,
+                    dataType: dataType,
+                })
+                .done(function(data) {
+                    if (data.op == "joinResp" && data.room != undefined) {
+                        waitingForOpp = data.waiting;
+                        console.log("dispatch resp", data);
+                        subscribeToRoom(data.room);
+                        playerSlot = data.slot;
+                        addChatText(TEXT_WELCOME_PLAYER.format(playerSlot + 1), 250);
+                        if (waitingForOpp)
+                            addChatText(TEXT_WAIT_FOR_OPP, 400);
+                        $('#joindiv').hide();
+                        $('#chatarea').show();
+                    }
+                });
+            });
+
+            $("#continuebutton").on('click', function() {
+                if (subscription)
+                {
+                    subscription.cancel();
+                    subscription = null;
+                }
+                resetPage();
+            });
+
+            $("#chatinput").keyup(function(event) {
+                if(event.keyCode == 13)
+                    $("#sendchat").click();
+            });
+
+            const DEF_STATS = {
+                plays: 0,
+                wins: 0
+            };
+            var localStats;
+
+            loadStats();
+            if (!localStats || localStats.plays == undefined)
+            {
+                localStats = DEF_STATS;
+                saveStats();
+            }
+            console.log("Stats", localStats);
+            updateStatsOnPage();
+
+            var clientId = null;
+            var client = new Faye.Client('/faye',{
+                timeout: 20
+            });
+            client.disable('websocket'); // TODO check issues
+
+            client.addExtension({
+                incoming: function(message, callback) {
+                    if (message.channel === '/meta/handshake')
+                        clientId = message.clientId;
+                    callback(message);
+                }
+            });
+            client.handshake(function() {
+                console.log("Handshake complete");
+            });
+
+            function subscribeToRoom (room) {
+                addChatText(TEXT_JOINED_ROOM.format(room));
+                currentRoom = room;
+                subscription = client.subscribe(ROOM_PREFIX + currentRoom, function (message) {
+                    console.log("Message ====================", message);
+                    playAudioSend();
+
+                    switch (message.op) {
+                        case "Quit":
+                            playerQuit(message);
+                            break;
+
+                        case "Start":
+                            startNewGame(message);
+                            break;
+
+                        case "Close":
+                            roomClosed(message);
+                            break;
+
+                        case "GameOver":
+                            gameOver(message);
+                            break;
+                            
+                        case "Chat":
+                            chatMessage(message);
+                            break;
+                    }
+                });
+            }
+
+            function startNewGame (message) {
+                if (waitingForOpp)
+                    addChatText(TEXT_PLAYER_JOINED);
+                addChatText(TEXT_SEPARATOR, 500);
+                addChatText(TEXT_GAME_START, 750, BGCOLOR_SYSTEM);
+                $('#chatinputcontainer').show();    
+                playAudioSend(); 
+            }
+
+            function playerQuit (message) {
+                addChatText(TEXT_PLAYER_DISCONNECTED.format(message.slot + 1), 0, BGCOLOR_SYSTEM);
+                $('#continuearea').show();
+                $('#chatinputcontainer').hide();
+            }
+
+            function roomClosed (message)
+            {
+                addChatText(TEXT_ROOM_CLOSED, 0, BGCOLOR_SYSTEM);
+                $('#continuearea').show();
+                $('#chatinputcontainer').hide();
+            }
+
+            function gameOver (message) {
+                var win = false;
+                // My guess
+                if (message.senderSlot == playerSlot)
+                {
+                    if (message.correct) {
+                        addChatText(TEXT_PLAYER_WON_YOU_HIT.format(message.humanSlot + 1), 0, BGCOLOR_WIN);
+                        win = true;
+                    }
+                    else
+                        addChatText(TEXT_PLAYER_LOST_YOU_MISS.format(message.humanSlot + 1), 0, BGCOLOR_LOSE);
+                }
+                else // Opponent's guess
+                {
+                    if (!message.correct) {
+                        addChatText(TEXT_PLAYER_WON_OPP_MISS.format(message.senderSlot + 1), 0, BGCOLOR_WIN);
+                        win = true;
+                    }
+                    else
+                        addChatText(TEXT_PLAYER_LOST_OPP_HIT.format(message.senderSlot + 1), 0, BGCOLOR_LOSE);
+                }
+                $('#continuearea').show();
+                //$('#chatinputcontainer').hide();
+
+                ++localStats.plays;
+                if (win)
+                    ++localStats.wins;
+                saveStats();
+                updateStatsOnPage();
+            }
+
+            function chatMessage (message) {
+                var tag = message.tag != undefined ? (" " + message.tag) : "";
+                if (message.text)
+                    addChatText(TEXT_CHAT_MESSAGE.format(message.slot + 1 + tag, COLOR_SLOTS[message.slot], message.text));
+            }
+
+            function loadStats () {
+                try {
+                    localStats = JSON.parse(window.localStorage.getItem("Stats"));
+                } catch (err) {
+                    console.log("Error:", err);
+                    localStats = DEF_STATS;
+                }
+            }
+
+            function saveStats () {
+                window.localStorage.setItem("Stats", JSON.stringify(localStats));
+            }
+
+            function updateStatsOnPage () {
+                $('#stats').html(STATS_TEXT.format(localStats.plays, localStats.wins));
+            }
+
+            function resetPage ()
+            {
+                $('#chatbox').empty();
+                $('#joindiv').show();
+                $('#chatarea').hide();
+                $('#continuearea').hide();
+                $('#chatinputcontainer').hide();            
+            }
+
+        </script>
+        </div>
+    </div> <!-- gamebox, container -->
+  </body>
+</html>
