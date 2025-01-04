@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "node scripts/humis.js >> humis.log",
+    "start": "node run dev",
     "dev": "node index.js"
   },
   "dependencies": {

@@ -8,7 +8,7 @@ var http       = require('http'),
     faye       = require('faye');
 const { __basedir } = require('../basedir');
 
-var port = process.env.port || 3030;
+var port = process.env.SERVER_PORT || 3030;
 var publicDir = `${__basedir}/public`;
 
 var bayeux = new faye.NodeAdapter({
