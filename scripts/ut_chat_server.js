@@ -1,17 +1,19 @@
 'use strict';
 
 // const { create } = require('domain');
-var http       = require('http'),
-    express    = require('express'),
-    randomstr  = require("randomstring"),
-    morgan     = require('morgan'),
-    faye       = require('faye');
-const { __basedir } = require('../basedir');
+import { createServer } from 'http';
+import express, { json, urlencoded } from 'express';
+import { generate } from "randomstring";
+import morgan from 'morgan';
+import pkg from 'faye';
+const { NodeAdapter } = pkg;
+
+import { __basedir } from '../basedir.js';
 
 var port = process.env.SERVER_PORT || 3030;
 var publicDir = `${__basedir}/public`;
 
-var bayeux = new faye.NodeAdapter({
+var bayeux = new NodeAdapter({
     mount:    '/faye',
     timeout:  45
 });
@@ -19,7 +21,7 @@ var bayeux = new faye.NodeAdapter({
 var game;
 
 var app = express();
-var server = http.createServer(app);
+var server = createServer(app);
 
 bayeux.attach(server);
 
@@ -73,8 +75,8 @@ bayeux.on('unsubscribe', (cid, room) => {
 
 // Open file server etc
 app.use(morgan("combined"));
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+app.use(json());
+app.use(urlencoded({ extended: false }));
 app.use(express.static(publicDir));
 
 // Accept chat message via HTTP
@@ -149,7 +151,7 @@ function assignUserToRoom(cid, req_room) {
         }
         return join_room;
     }
-    nextRoom = game.ROOM_PREFIX + randomstr.generate(8);
+    nextRoom = game.ROOM_PREFIX + generate(8);
     createAndJoinRoom(nextRoom, cid);
     return nextRoom;
 }
@@ -201,4 +203,4 @@ class ChatServer {
     }
 }
 
-module.exports = ChatServer;
+export default ChatServer;

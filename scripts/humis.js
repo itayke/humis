@@ -1,9 +1,7 @@
 'use strict';
 
 import { Config } from './config.js';
-import ChatServer from "./ut_chat_server.cjs";
-// import randomstr from "randomstring";
-// import fs from 'fs';
+import ChatServer from "./ut_chat_server.js";
 import OpenAI from "openai";
 import dotenv from 'dotenv';
 
@@ -24,10 +22,10 @@ const NUM_SLOTS_IN_ROOM = Config.NUM_HUMAN_SLOTS + Config.NUM_AI_SLOTS;
 // Helpers
 //
 
-String.prototype.format = () => {
+String.prototype.format = function() {
   var content = this;
   for (var i = 0; i < arguments.length; i++)
-    content = content.replace('{' + i + '}', arguments[i]);
+      content = content.replace('{' + i + '}', arguments[i]);
   return content;
 };
 
@@ -186,6 +184,8 @@ function OnUserUnsubscribed(cid, room_info) {
 }
 
 async function OnMessagePublished(cid, room_info, msg) {
+  if (!room_info)
+    return;
   switch (msg.op) {
     case "Chat": {
       const slot = msg.slot;

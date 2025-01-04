@@ -16,7 +16,7 @@ export const Config = {
     Keep it laid back and short, no more than 20 words, but be funny and friendly!`,
   CHATGPT_IDENTIFY_NAME:
     `Given this message: "{0}", identify the speaker's first name.    
-    Respond with one word only. If you don't know the name, respond with N/A.
+    Respond with the name only, or N/A if you can't identify the name.
             
     Example responses:
     John
