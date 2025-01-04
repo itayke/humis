@@ -4,10 +4,12 @@ Created by Itay Keren
 Copyright (C) 2024 Untame (Keren Software)
 
 ## Setup
-Create a .env file with the following info filled from an OpenAI account
+Create a .env file with the following info filled from an OpenAI account:
+```
 OPENAI_API_KEY=
 OPENAI_ORG_ID=
 OPENAI_PROJ_ID=
+```
 
 To install node dependencies:
 ```
