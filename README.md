@@ -1,0 +1,1 @@
+<b>Human Is</b> is a ChatGPT-powered party game where 5 chatroom slots are filled with 2 randomly selected human players plus 3 bots who desperately try to come off as humans. The winner is the player who correctly identifies the other human.
