@@ -1,7 +1,7 @@
 'use strict';
 
 import { Config } from './config.js';
-import ChatServer from "./ut_chat_server.js";
+import { ChatServer } from "./ChatServer.js";
 import OpenAI from "openai";
 import dotenv from 'dotenv';
 
@@ -129,14 +129,11 @@ async function timeLimitTask(task, timeLimit, failureValue = null) {
 //   ]
 // }
 
-ChatServer.Initialize({
-  ROOM_PREFIX: Config.ROOM_PREFIX,
-  MAX_PLAYERS_PER_ROOM: Config.NUM_HUMAN_SLOTS,
-
-  OnUserJoinedRoom: OnUserJoinedRoom,
-  OnUserSubscribed: OnUserSubscribed,
-  OnUserUnsubscribed: OnUserUnsubscribed,
-  OnMessagePublished: OnMessagePublished
+const chatServer = new ChatServer (Config.NUM_HUMAN_SLOTS, Config.ROOM_PREFIX, {
+  onUserJoinedRoom: OnUserJoinedRoom,
+  onUserSubscribed: OnUserSubscribed,
+  onUserUnsubscribed: OnUserUnsubscribed,
+  onMessagePublished: OnMessagePublished
 });
 
 //
@@ -144,7 +141,7 @@ ChatServer.Initialize({
 //
 
 function OnUserJoinedRoom(cid, room_info, resp) {
-  console.log(cid, "Joined room ", room_info, "resp", resp);
+  console.log(cid, "=============================================Joined room ", room_info, "resp", resp);
   if (room_info.slotInfos == undefined) {
     room_info.slotInfos = Array(NUM_SLOTS_IN_ROOM).fill(null);      // [ null, null, ...]
     room_info.botSlotNums = [...Array(NUM_SLOTS_IN_ROOM).keys()];   // [ 0, 1, 2, ...]
@@ -178,8 +175,8 @@ function OnUserUnsubscribed(cid, room_info) {
   console.log(cid + " LEFT room slot " + slot);
 
   if (slot >= 0) {
-    ChatServer.Publish(room_info, { op: "Quit", slot: Number(slot) });
-    ChatServer.CloseRoom(room_info);
+    chatServer.publishMessage(room_info, { op: "Quit", slot: Number(slot) });
+    chatServer.closeRoom(room_info);
   }
 }
 
@@ -236,7 +233,6 @@ async function OnMessagePublished(cid, room_info, msg) {
 // General funcs
 //
 
-
 function saveMessageHistory(room_info, msg) {
   if (room_info.history == undefined)
     room_info.history = [];
@@ -267,7 +263,7 @@ const getUserNameInRoom = (slot, room_info) => room_info.names[slot];
 // At least MIN players who are subscribed
 function isRoomReady(room_info) {
   if (room_info)
-    return ChatServer.GetNumberOfSubscribers(room_info) >= Config.NUM_HUMAN_SLOTS;
+    return chatServer.getNumberOfSubscribers(room_info) >= Config.NUM_HUMAN_SLOTS;
   return false;
 }
 
@@ -281,12 +277,12 @@ function startRoom(room_info) {
   // Shuffle the leftover bot slots
   shuffleArray(room_info.botSlotNums);
 
-  if (ChatServer.Publish(room_info, { op: "Start" }))
+  if (chatServer.publishMessage(room_info, { op: "Start" }))
     setTimeoutForNextBotMessage(room_info);
 }
 
 function gameOver(room_info, correct_guess, sender_slot, guessed_slot, human_slot) {
-  ChatServer.Publish(room_info, {
+  chatServer.publishMessage(room_info, {
     op: "GameOver",
     correct: Boolean(correct_guess),
     senderSlot: Number(sender_slot),
@@ -350,8 +346,8 @@ async function sendBotMessage(room_info) {
     const secs_since_last_human_msg = (Date.now() - room_info.lastMsgTS) / 1000;
     if (secs_since_last_human_msg > Config.TIMEOUT_NO_MSG_SECS) {
       console.log("Timeout - no human messages for {0} seconds, limit {1}".format(secs_since_last_human_msg, Config.TIMEOUT_NO_MSG_SECS))
-      ChatServer.Publish(room_info, { op: "Close", reason: "Idle" });
-      ChatServer.CloseRoom(room_info);
+      chatServer.publishMessage(room_info, { op: "Close", reason: "Idle" });
+      chatServer.closeRoom(room_info);
       return;
     }
   }
@@ -408,7 +404,7 @@ async function sendBotMessage(room_info) {
   setTimeoutForNextBotMessage(room_info);
 
   if (text) {
-    ChatServer.Publish(room_info, {
+    chatServer.publishMessage(room_info, {
       op: "Chat",
       slot: slot,
       tag: room_info.gameOver ? Config.POSTGAME_TAG_BOT : undefined,
