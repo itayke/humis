@@ -129,19 +129,14 @@ async function timeLimitTask(task, timeLimit, failureValue = null) {
 //   ]
 // }
 
-const chatServer = new ChatServer (Config.NUM_HUMAN_SLOTS, Config.ROOM_PREFIX, {
-  onUserJoinedRoom: OnUserJoinedRoom,
-  onUserSubscribed: OnUserSubscribed,
-  onUserUnsubscribed: OnUserUnsubscribed,
-  onMessagePublished: OnMessagePublished
-});
+const chatServer = new ChatServer(Config.NUM_HUMAN_SLOTS, Config.ROOM_PREFIX);
 
 //
-// Chat Server Implementations
+// Chat Server events
 //
 
-function OnUserJoinedRoom(cid, room_info, resp) {
-  console.log(cid, "=============================================Joined room ", room_info, "resp", resp);
+chatServer.onUserJoinedRoom = function OnUserJoinedRoom(cid, room_info, resp) {
+  console.log("CID", cid, "Joined room ", room_info, "resp", resp);
   if (room_info.slotInfos == undefined) {
     room_info.slotInfos = Array(NUM_SLOTS_IN_ROOM).fill(null);      // [ null, null, ...]
     room_info.botSlotNums = [...Array(NUM_SLOTS_IN_ROOM).keys()];   // [ 0, 1, 2, ...]
@@ -162,17 +157,17 @@ function OnUserJoinedRoom(cid, room_info, resp) {
   // console.log("Joined room ", room_info, "resp", resp);
 }
 
-function OnUserSubscribed(cid, room_info) {
+chatServer.onUserSubscribed = function OnUserSubscribed(cid, room_info) {
   var full = isRoomReady(room_info);
   if (full)
     startRoom(room_info);
 
-  console.log("JOINED ", room_info, "full? " + full);
+  console.log("CID", cid, "JOINED ", room_info, "full? " + full);
 }
 
-function OnUserUnsubscribed(cid, room_info) {
+chatServer.onUserUnsubscribed = function OnUserUnsubscribed(cid, room_info) {
   var slot = getSlotByClientID(cid, room_info);
-  console.log(cid + " LEFT room slot " + slot);
+  console.log("CID", cid, "LEFT room slot", slot);
 
   if (slot >= 0) {
     chatServer.publishMessage(room_info, { op: "Quit", slot: Number(slot) });
@@ -180,7 +175,7 @@ function OnUserUnsubscribed(cid, room_info) {
   }
 }
 
-async function OnMessagePublished(cid, room_info, msg) {
+chatServer.onMessagePublished = async function OnMessagePublished(cid, room_info, msg) {
   if (!room_info)
     return;
   switch (msg.op) {
@@ -431,17 +426,19 @@ async function getMetadataFromMessage(message) {
   console.log("METADATA request", chat_req_data);
 
   try {
-    const response = await timeLimitTask(openai.createChatCompletion(chat_req_data), Config.CHATGPT_MAX_WAIT);
+    const response = await timeLimitTask(openai.chat.completions.create(chat_req_data), Config.CHATGPT_MAX_WAIT);
     if (response) {
-      var content_data = String(response.data.choices[0].message.content);
-      var parsed_data = content_data.trim().split('\n');
+      let message = response.choices[0].message;
+      let content_data = String(message.content);
+      let parsed_data = content_data.trim().split('\n');
       // content_data.trim().split("\n");
-      console.log("METADATA response", response.data.choices[0].message.content, parsed_data);
-      var ret = {};
-      if (parsed_data && parsed_data.length >= 1) {
+      let ret = {};
+      if (parsed_data && parsed_data.length) {
         var name = String(parsed_data[0]).trim();
-        if (name && REGEX_NAME.test(name))
+        if (name && REGEX_NAME.test(name)) {
           ret.name = name;
+          console.log("Name identified as", name, "from", parsed_data)
+        }
       }
       return ret;
       // var is_ai_str = String(parsed_data[2]).trim().toLowerCase();     

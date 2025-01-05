@@ -16,8 +16,8 @@ import { __basedir } from '../basedir.js';
 
 export class ChatServer {
 
-  maxPlayersPerRoom = 5;
-  roomPrefix = "room_";
+  maxPlayersPerRoom;
+  roomPrefix;
 
   bayeux;
   app;
@@ -25,19 +25,16 @@ export class ChatServer {
   rooms = {};
   nextRoom;
 
-  events = {
-    onMessagePublished: () => { },
-    onUserSubscribed: () => { },
-    onUserUnsubscribed: () => { },
-    onUserJoinedRoom: () => { },
-  };
+  onMessagePublished = (cid, room_info, msg) => { };
+  onUserSubscribed = (cid, room_info) => { };
+  onUserUnsubscribed = (cid, room_info) => { };
+  onUserJoinedRoom = (cid, room_info, resp) => { };
   
-  constructor(maxPlayersPerRoom, roomPrefix, events) {
-    console.log("initializing", events);
+  constructor(maxPlayersPerRoom, roomPrefix) {
+    console.log("initializing ChatServer");
 
-    this.maxPlayersPerRoom = maxPlayersPerRoom;
-    this.roomPrefix = roomPrefix;
-    this.events = events;
+    this.maxPlayersPerRoom = maxPlayersPerRoom ?? 5;
+    this.roomPrefix = roomPrefix ?? "room_";
 
     this.bayeux = new NodeAdapter({
       mount: '/faye',
@@ -61,21 +58,21 @@ export class ChatServer {
         
     // Message received on any channel
     this.bayeux.on('publish', (cid, room, msg) => {
-      room = room.substr(1); //TODO REGEX
+      room = room.substr(1); // remove /
       console.log("-------- publish ", room, cid, msg);
-      this.events.onMessagePublished(cid, this.rooms[room], msg);
+      this.onMessagePublished(cid, this.rooms[room], msg);
     });
         
     // Subscribed to a channel
     this.bayeux.on('subscribe', (cid, room) => {
-      room = room.substr(1); //TODO REGEX
+      room = room.substr(1); // remove /
       console.log("-------- subscribe ", room, cid);
       var room_info = this.rooms[room];
       if (room_info) {
         var user_data = room_info._userData[cid];
         if (user_data) {
           user_data._sub = true;
-          this.events.onUserSubscribed(cid, room_info);
+          this.onUserSubscribed(cid, room_info);
         }
       }
     });
@@ -89,7 +86,7 @@ export class ChatServer {
         var user_data = room_info._userData[cid];
         if (user_data) {
           user_data._sub = false;
-          this.events.onUserUnsubscribed(cid, room_info);
+          this.onUserUnsubscribed(cid, room_info);
         }
         delete room_info._userData[cid];
       }
@@ -121,7 +118,7 @@ export class ChatServer {
           console.log("Client ID ", cid, " joining room ", msg.room);
           resp.room = this.assignUserToRoom(cid, msg.room);
           if (resp.room)
-            this.events.onUserJoinedRoom(cid, this.rooms[resp.room], resp);
+            this.onUserJoinedRoom(cid, this.rooms[resp.room], resp);
           break;
         default:
           resp.error = "Unknown command";
