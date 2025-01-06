@@ -1,6 +1,6 @@
 'use strict';
 
-import { Config } from './config.js';
+import { ChatConfig } from './ChatConfig.js';
 import { ChatServer } from "./ChatServer.js";
 import OpenAI from "openai";
 import dotenv from 'dotenv';
@@ -16,7 +16,7 @@ const openai = new OpenAI({
 //
 
 const valueOrDefault = (val, def) => val != undefined ? val : def;
-const NUM_SLOTS_IN_ROOM = Config.NUM_HUMAN_SLOTS + Config.NUM_AI_SLOTS;
+const NUM_SLOTS_IN_ROOM = ChatConfig.NUM_HUMAN_SLOTS + ChatConfig.NUM_AI_SLOTS;
 
 //
 // Helpers
@@ -24,8 +24,11 @@ const NUM_SLOTS_IN_ROOM = Config.NUM_HUMAN_SLOTS + Config.NUM_AI_SLOTS;
 
 String.prototype.format = function() {
   var content = this;
-  for (var i = 0; i < arguments.length; i++)
-      content = content.replace('{' + i + '}', arguments[i]);
+  for (var i = 0; i < arguments.length; i++) {
+    let str = '{' + i + '}';
+    while (content.includes(str))
+      content = content.replace(str, arguments[i]);
+  }
   return content;
 };
 
@@ -43,9 +46,15 @@ function shuffleArray(array) {
 const REGEX_AI_TRIM_QUOTES = /^\"(.*)\"$/s;
 const REGEX_AI_FIRST_LINE = /^(.+)/;
 const REGEX_AI_PREFIX = /^([\w\[\]]+[:\.])\W*(.*)/;   // Also remove Name: Number. etc,
-const REGEX_AI_WORD = /(\w+)/;
-const REGEX_AI_PARSE_METADATA = /1\.[^\w/]*([\w/]+).*2\.[^\w/]*([\w/]+)/s;
-const REGEX_NAME = /^[a-zA-Z0-9]*$/;
+// const REGEX_AI_WORD = /(\w+)/;
+// const REGEX_AI_PARSE_METADATA = /1\.[^\w/]*([\w/]+).*2\.[^\w/]*([\w/]+)/s;
+const REGEX_NAME = /^[a-zA-Z0-9\_]*(\s[a-zA-Z0-9\_]*)?$/;
+//const REGEX_NAME = /\b[a-zA-Z]+(?:\s+[a-zA-Z]+)?\b/;
+
+// console.log(REGEX_NAME.test("N/A"));
+// console.log(REGEX_NAME.test("Itay"));
+// console.log(REGEX_NAME.test("sds_999"));
+
 
 function trimAIText(text) {
   var text = text.trim();
@@ -69,17 +78,6 @@ function trimAIText(text) {
   // console.log(text, "->", res_data);
   return text;
 }
-
-// console.log(REGEX_AI_PARSE_METADATA.exec("1. N/A\n2. true"));
-// console.log(REGEX_AI_PARSE_METADATA.exec("1. N/A (testing)\n2. true(testing)"));
-// console.log(REGEX_PROPER_NAME.test("Itay"));
-// console.log(REGEX_PROPER_NAME.test("Ita/y"));
-// console.log(REGEX_PROPER_NAME.test("Ita_y"));
-// console.log(REGEX_PROPER_NAME.test("Ita y"));
-// console.log(trimAIText("No, I am an AI language model created by OpenAI. "));
-// console.log(trimAIText("[Emma]: I love hiking and once climbed to the top of Mount Kilimanjaro."));
-// console.log(trimAIText("[Anna:] Hi everyone, I'm Anna, an avid traveler and yoga enthusiast"));
-// console.log(trimAIText("\"[Olivia:] Great input, Ailee, I also limit the influence of social media on my mental health by following only positive influencers, removing any negative or stressful experiences or people from my feeds.\" Taking\" breaks is as effective too.\""));
 
 async function timeLimitTask(task, timeLimit, failureValue = null) {
   let timeout;
@@ -129,7 +127,7 @@ async function timeLimitTask(task, timeLimit, failureValue = null) {
 //   ]
 // }
 
-const chatServer = new ChatServer(Config.NUM_HUMAN_SLOTS, Config.ROOM_PREFIX);
+const chatServer = new ChatServer(ChatConfig.NUM_HUMAN_SLOTS, ChatConfig.ROOM_PREFIX);
 
 //
 // Chat Server events
@@ -187,24 +185,24 @@ chatServer.onMessagePublished = async function OnMessagePublished(cid, room_info
       if (room_info._userData[cid]) // Is human?
       {
         if (!room_info.names[slot]) {
-          var metadata_from_message = await getMetadataFromMessage(msg.text);
-          console.log("MY METADATA", metadata_from_message);
-          if (metadata_from_message && metadata_from_message.name)
-            room_info.names[slot] = metadata_from_message.name;
+          var nameFromMsg = await getNameFromMessage(msg.text);
+          console.log("MY NAME", nameFromMsg);
+          if (nameFromMsg)
+            room_info.names[slot] = nameFromMsg;
         }
 
         // Last message timestamp
         room_info.lastMsgTS = Date.now();
 
         // Check if "Human Is ..."
-        var result = Config.REGEX_HUMANIS.exec(msg.text);
+        var result = ChatConfig.REGEX_HUMANIS.exec(msg.text);
         if (result && result[1] > 0) {
-          var guessed_slot = result[1] - 1;   // down to 0..4
-          if (guessed_slot != slot) { // Ignore self-guess
-            if (room_info.slotInfos[guessed_slot]) { // Is human
-              console.log("Guessed correct! win. Human slot is " + guessed_slot);
-              gameOver(room_info, true, slot, guessed_slot, guessed_slot);
-              room_info.loserSlot = guessed_slot;
+          var guessedSlot = result[1] - 1;   // down to 0..4
+          if (guessedSlot != slot) { // Ignore self-guess
+            if (room_info.slotInfos[guessedSlot]) { // Is human
+              console.log("Guessed correct! win. Human slot is " + guessedSlot);
+              gameOver(room_info, true, slot, guessedSlot, guessedSlot);
+              room_info.loserSlot = guessedSlot;
             }
             else {  // Not human
               // Find human for the response
@@ -212,7 +210,7 @@ chatServer.onMessagePublished = async function OnMessagePublished(cid, room_info
                 if (room_info.slotInfos[human_slot] && room_info.slotInfos[human_slot].cid != cid)
                   break;
               console.log("Guessed wrong! loss. Human slot is " + human_slot);
-              gameOver(room_info, false, slot, guessed_slot, human_slot);
+              gameOver(room_info, false, slot, guessedSlot, human_slot);
               room_info.loserSlot = slot;
             }
           }
@@ -231,7 +229,7 @@ chatServer.onMessagePublished = async function OnMessagePublished(cid, room_info
 function saveMessageHistory(room_info, msg) {
   if (room_info.history == undefined)
     room_info.history = [];
-  else if (room_info.history.length > Config.MAX_HISTORY_PER_ROOM)
+  else if (room_info.history.length > ChatConfig.MAX_HISTORY_PER_ROOM)
     room_info.history.shift();
   
   room_info.history.push({
@@ -248,7 +246,7 @@ function getSlotByClientID(cid, room_info) {
 }
 
 // At least MIN players
-const roomHasMinimumPlayers = (room_info) => room_info && room_info._nids >= Config.NUM_HUMAN_SLOTS;
+const roomHasMinimumPlayers = (room_info) => room_info && room_info._nids >= ChatConfig.NUM_HUMAN_SLOTS;
 const randomBotSlotIndex = (room_info) => Math.floor(Math.random() * room_info.botSlotNums.length);
 const randomBotSlotIndexFavorFirst = (room_info) => Math.floor(Math.pow(Math.random(), 4) * room_info.botSlotNums.length);
 
@@ -258,7 +256,7 @@ const getUserNameInRoom = (slot, room_info) => room_info.names[slot];
 // At least MIN players who are subscribed
 function isRoomReady(room_info) {
   if (room_info)
-    return chatServer.getNumberOfSubscribers(room_info) >= Config.NUM_HUMAN_SLOTS;
+    return chatServer.getNumberOfSubscribers(room_info) >= ChatConfig.NUM_HUMAN_SLOTS;
   return false;
 }
 
@@ -290,45 +288,56 @@ function gameOver(room_info, correct_guess, sender_slot, guessed_slot, human_slo
 
 function populateMessageHistory(slot, room_info) {
   // var name = valueOrDefault(getUserNameInRoom(slot, room_info), humisConfig.CHATGPT_SYSTEM_MESSAGE_YOURNAME_PLACEHOLDER);
-  var my_name = getUserNameInRoom(slot, room_info);
-  var sys_msg;
+  const my_name = getUserNameInRoom(slot, room_info);
+  var user_message;
+  // Loser found
   if (room_info.loserSlot != undefined) {
-    var loser_name = getUserNameInRoom(room_info.loserSlot, room_info);
-    if (!loser_name)
-      loser_name = "Slot " + (Number(room_info.loserSlot) + 1);
-    sys_msg = my_name ? Config.CHATGPT_SYSTEM_MESSAGE_LOSER_NAMED.format(my_name, loser_name) : Config.CHATGPT_SYSTEM_MESSAGE_LOSER.format(loser_name);
-  } else {
-    sys_msg = my_name ? Config.CHATGPT_SYSTEM_MESSAGE_NAMED.format(my_name) : Config.CHATGPT_SYSTEM_MESSAGE_INTRO;
+    var loser_name = getUserNameInRoom(room_info.loserSlot, room_info) ?? `Slot ${Number(room_info.loserSlot) + 1}`;
+    user_message = my_name ?
+      ChatConfig.AI_MESSAGE_LOSER_NAMED_TRANSCRIPT.format(my_name, loser_name) :
+      ChatConfig.AI_MESSAGE_LOSER_TRANSCRIPT.format(loser_name);
   }
-  sys_msg += " " + Config.CHATGPT_SYSTEM_MESSAGE_SUFFIX;
+  else {
+    user_message = my_name ?
+      ChatConfig.AI_MESSAGE_NAMED_TRANSCRIPT.format(my_name) :
+      room_info.history ?
+        ChatConfig.AI_MESSAGE_INTRO_TRANSCRIPT :
+        ChatConfig.AI_MESSAGE_INTRO;
+  }
+
+  if (room_info.history) {
+    user_message += '\n';
+    
+    let len = room_info.history.length;
+    let startHistory = Math.max(0, len - ChatConfig.CHATGPT_MAX_HISTORY_TO_SEND);
+    for (var i = startHistory; i < len; ++i) {
+      var entry = room_info.history[i];
+
+      // // After CHATGPT_MAX_HISTORY_TO_SEND only allow messages from self
+      // if (i < startHistory && slot != entry.slot)
+      //   continue;
+
+      let name = getUserNameInRoom(entry.slot, room_info) ?? (ChatConfig.DEFAULT_NAME_PREFIX + (Number(entry.slot) + 1));
+      user_message += `${name}: ${entry.msg}\n`;
+    }
+  }
 
   var messages = [
     {
-      role: "system",
-      content: sys_msg
+      role: "user",
+      content: user_message
+    },
+    {
+      role: "developer",
+      content: ChatConfig.AI_DEV_MESSAGE
     }
   ];
-
-  if (room_info.history != undefined) {
-    var len = room_info.history.length;
-    for (var i = len - 1; i >= 0; --i) {
-      var entry = room_info.history[i];
-
-      // After CHATGPT_MAX_HISTORY_TO_SEND only allow messages from self
-      if (slot == entry.slot || messages.length <= Config.CHATGPT_MAX_HISTORY_TO_SEND)
-        messages.unshift({
-          role: "user",
-          content: room_info.history[i].msg,
-          name: valueOrDefault(getUserNameInRoom(entry.slot, room_info), Config.DEFAULT_NAME_PREFIX + (Number(entry.slot) + 1))
-        });
-    }
-  }
 
   return messages;
 }
 
 function setTimeoutForNextBotMessage(room_info) {
-  var time = Config.MESSAGE_RAND_TIME_MIN + Math.floor(Math.random() * Config.MESSAGE_RAND_TIME_RANGE);
+  var time = ChatConfig.MESSAGE_RAND_TIME_MIN + Math.floor(Math.random() * (ChatConfig.MESSAGE_RAND_TIME_MAX - ChatConfig.MESSAGE_RAND_TIME_MIN));
   setTimeout(() => sendBotMessage(room_info), time)
 }
 
@@ -339,8 +348,8 @@ async function sendBotMessage(room_info) {
   // Check for timeout
   if (room_info.lastMsgTS) {
     const secs_since_last_human_msg = (Date.now() - room_info.lastMsgTS) / 1000;
-    if (secs_since_last_human_msg > Config.TIMEOUT_NO_MSG_SECS) {
-      console.log("Timeout - no human messages for {0} seconds, limit {1}".format(secs_since_last_human_msg, Config.TIMEOUT_NO_MSG_SECS))
+    if (secs_since_last_human_msg > ChatConfig.TIMEOUT_NO_MSG_SECS) {
+      console.log("Timeout - no human messages for {0} seconds, limit {1}".format(secs_since_last_human_msg, ChatConfig.TIMEOUT_NO_MSG_SECS))
       chatServer.publishMessage(room_info, { op: "Close", reason: "Idle" });
       chatServer.closeRoom(room_info);
       return;
@@ -358,37 +367,38 @@ async function sendBotMessage(room_info) {
   var messages = populateMessageHistory(slot, room_info);
 
   var chat_req_data = {
-    model: Config.CHATGPT_MODEL,
+    model: ChatConfig.CHATGPT_MODEL,
     messages: messages,
-    temperature: Number(Config.CHATGPT_RESPONSE_TEMPERATURE),
-    max_tokens: Number(Config.CHATGPT_MAX_RESPONSE_TOKENS),
+    frequency_penalty: Number(ChatConfig.CHATGPT_FREQ_PANELTY),
+    temperature: Number(ChatConfig.CHATGPT_RESPONSE_TEMPERATURE),
+    max_tokens: Number(ChatConfig.CHATGPT_MAX_RESPONSE_TOKENS),
     // logit_bias: CHATGPT_RESPONSE_LOGIT_BIAS
   };
   console.log("CHATGPT sending", chat_req_data);
 
   var text;// = randomstr.generate(4);
   try {
-    const response = await timeLimitTask(openai.chat.completions.create(chat_req_data), Config.CHATGPT_MAX_WAIT);
+    const response = await timeLimitTask(openai.chat.completions.create(chat_req_data), ChatConfig.CHATGPT_MAX_WAIT);
     if (response) {
       let message = response.choices[0].message;
       console.log("==========", message);
       text = trimAIText(String(message.content));
 
       if (!room_info.names[slot]) {
-        var metadata_from_message = await getMetadataFromMessage(text);
-        console.log("BOT METADATA", metadata_from_message);
+        var nameFromMsg = await getNameFromMessage(text);
+        console.log("BOT NAME", nameFromMsg);
                                 
-        if (metadata_from_message && metadata_from_message.name)
-          room_info.names[slot] = metadata_from_message.name;
+        if (nameFromMsg)
+          room_info.names[slot] = nameFromMsg;
       }
 
-      var wait = text.length * Config.CHATGPT_RESPONSE_WAIT_PER_CHAR;
+      var wait = text.length * ChatConfig.CHATGPT_RESPONSE_WAIT_PER_CHAR;
       console.log("CHATGPT response", message.content, "=>", text, "Name", room_info.names[slot], "wait=" + wait);
       if (wait > 0)
         await delay(wait);
     }
     else
-      console.log("Response timed out after " + Config.CHATGPT_MAX_WAIT + "ms");
+      console.log("Response timed out after " + ChatConfig.CHATGPT_MAX_WAIT + "ms");
   } catch (err) {
     console.log("CHATGPT error", err, messages);
   }
@@ -402,55 +412,53 @@ async function sendBotMessage(room_info) {
     chatServer.publishMessage(room_info, {
       op: "Chat",
       slot: slot,
-      tag: room_info.gameOver ? Config.POSTGAME_TAG_BOT : undefined,
+      tag: room_info.gameOver ? ChatConfig.POSTGAME_TAG_BOT : undefined,
       text: text
     });
   }
 }
 
-// Send ChatGPT a message to determine name and likelihood of being an AI
-// Returns: {
-//    name: String,
-//    isHuman: Boolean
-// }
-// or null on error
-async function getMetadataFromMessage(message) {
+// Send ChatGPT a message to determine user name from response
+// Returns name or null
+async function getNameFromMessage(message) {
   var chat_req_data = {
-    model: Config.CHATGPT_MODEL,
+    model: ChatConfig.CHATGPT_MODEL,
     messages: [
-      { role: "user", content: Config.CHATGPT_IDENTIFY_NAME.format(message) }
+      { role: "user", content: ChatConfig.AI_IDENTIFY_NAME.format(message) }
     ],
     temperature: 0.2,   // deterministic
     max_tokens: 20,
   };
-  console.log("METADATA request", chat_req_data);
+  console.log("Name request", chat_req_data);
 
+  let retName = null;
   try {
-    const response = await timeLimitTask(openai.chat.completions.create(chat_req_data), Config.CHATGPT_MAX_WAIT);
+    const response = await timeLimitTask(openai.chat.completions.create(chat_req_data), ChatConfig.CHATGPT_MAX_WAIT);
     if (response) {
       let message = response.choices[0].message;
-      let content_data = String(message.content);
-      let parsed_data = content_data.trim().split('\n');
+      let contentData = String(message.content);
+      let parsedData = contentData.trim().split('\n');
       // content_data.trim().split("\n");
-      let ret = {};
-      if (parsed_data && parsed_data.length) {
-        var name = String(parsed_data[0]).trim();
+      if (parsedData && parsedData.length) {
+        var name = String(parsedData[0]).trim();
         if (name && REGEX_NAME.test(name)) {
-          ret.name = name;
-          console.log("Name identified as", name, "from", parsed_data)
+          retName = name;
+          console.log("Name identified as", name, "from", contentData)
+        }
+        else {
+          console.log("Name unidentified from", contentData);
         }
       }
-      return ret;
       // var is_ai_str = String(parsed_data[2]).trim().toLowerCase();     
       // var ret = {
       //     isAI: is_ai_str == "true" || is_ai_str == "yes" || is_ai_str == "y"
       // };
     }
     else
-      console.log("Response timed out after " + Config.CHATGPT_MAX_WAIT + "ms");
+      console.log("Response timed out after " + ChatConfig.CHATGPT_MAX_WAIT + "ms");
   } catch (err) {
     console.log("CHATGPT error", err);
   }
-  return null;
+  return retName;
 }
 

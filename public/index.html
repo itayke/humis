@@ -188,7 +188,7 @@
 
         <div class="header">
             <div class="topleft">
-                <b>Human Is</b> v0.13<br/>
+                <b>Human Is</b> v0.34<br/>
                 Identify the human among the AI bots
             </div>
             <img src="assets/humis_logo_256.png" class="humisicon">
@@ -200,8 +200,8 @@
     
         <!-- <h1>Human Is</h1> -->
         <div id="joindiv" class="joinarea">
-            <button style="width: 120px;" id="joinbutton" class="button">Join Game</button>
-            <input style="flex-grow:1; margin-left:5px;" type="text" class="chatinput" id="room" autocomplete="off" placeholder="Leave empty to join the next available room"/>
+            <button style="width: 50%;" id="joinbutton" class="button">Join Room</button>
+            <input style="flex-grow:1; margin-left:5px; text-align: center;" type="text" class="chatinput" id="room" autocomplete="off" placeholder="Next available"/>
             <p/>
         </div>
 
@@ -221,7 +221,7 @@
 
         <div class="humisfooter">
             <img class="muteIcon" id="muteIcon" src="assets/iconAudioOn.png"/>
-            <b>Human Is</b> © 2023 Itay Keren (Untame)<br/>
+            <b>Human Is</b> © 2025 Itay Keren (Untame)<br/>
             Built with NodeJS + OpenAI
 
         </div>
@@ -251,20 +251,20 @@
             const BGCOLOR_SYSTEM = "#e7e7e7";
 
             const TEXT_JOINED_ROOM = "<i>Joining room {0}</i>"
-            const TEXT_WELCOME_PLAYER = "<i>Hello human, you are at chatroom slot <b>#{0}</b>!</i>";
+            const TEXT_WELCOME_PLAYER = "<i>Hello human, you are <b style='color:{1};'>#{0}</b>!</i>";
             const TEXT_WAIT_FOR_OPP = "<i>Please wait for another human to join...</i>";
             const TEXT_PLAYER_JOINED = "<i>Another human joined!</i>";
             const TEXT_SEPARATOR = "<hr/>";
             const TEXT_GAME_START = 
-                "<i><b>Welcome to the chatroom!</b><br/>Introduce yourself, be friendly, and have some fun!<br/>" + 
-                "To identify the other human, type <b>Human is</b> and their number.</i>";
+                "<i><b>Welcome to the chatroom!</b><br/>Introduce yourself, and try to identify the other human!<br/>" + 
+                "To guess, type <b>Human is</b> and their number.</i>";
             const TEXT_CHAT_MESSAGE = "<b style='color:{1};'>#{0}:</b> {2}"
-            const TEXT_PLAYER_DISCONNECTED = "<i>Human at slot <b>#{0}</b> disconnected. Please try another room.</i>";
+            const TEXT_PLAYER_DISCONNECTED = "<i>Human at <b>#{0}</b> disconnected. Please try another room.</i>";
             const TEXT_ROOM_CLOSED = "<i>Idle room closed. Please try another room.</i>";
-            const TEXT_PLAYER_WON_YOU_HIT = "<i><b style='color:" + COLOR_WIN + ";'>You WIN!</b> Human at slot <b>#{0}</b> successfully identified.</i>";
-            const TEXT_PLAYER_LOST_YOU_MISS = "<i><b style='color:" + COLOR_LOSE + ";'>You LOSE.</b> You failed to identify the human at slot <b>#{0}</b>.</i>";
+            const TEXT_PLAYER_WON_YOU_HIT = "<i><b style='color:" + COLOR_WIN + ";'>You WIN!</b> Human at <b>#{0}</b> successfully identified.</i>";
+            const TEXT_PLAYER_LOST_YOU_MISS = "<i><b style='color:" + COLOR_LOSE + ";'>You LOSE.</b> You failed to identify that <b>Human is {0}</b>!</i>";
             const TEXT_PLAYER_WON_OPP_MISS = "<i><b style='color:" + COLOR_WIN + ";'>You WIN!</b> Human at slot <b>#{0}</b> has misidentified you.</i>";
-            const TEXT_PLAYER_LOST_OPP_HIT = "<i><b style='color:" + COLOR_LOSE + ";'>You LOSE.</b> You were identified by the human at slot <b>#{0}</b>.</i>";
+            const TEXT_PLAYER_LOST_OPP_HIT = "<i><b style='color:" + COLOR_LOSE + ";'>You LOSE.</b> You were identified by the <b>Human at #{0}</b>!</i>";
 
             const STATS_TEXT = "<b>Plays</b> {0}<br/><b>Wins</b> {1}";
 
@@ -356,7 +356,7 @@
                         console.log("dispatch resp", data);
                         subscribeToRoom(data.room);
                         playerSlot = data.slot;
-                        addChatText(TEXT_WELCOME_PLAYER.format(playerSlot + 1), 250);
+                        addChatText(TEXT_WELCOME_PLAYER.format(playerSlot + 1, COLOR_SLOTS[playerSlot]), 250);
                         if (waitingForOpp)
                             addChatText(TEXT_WAIT_FOR_OPP, 400);
                         $('#joindiv').hide();
