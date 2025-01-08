@@ -1,5 +1,3 @@
-'use strict';
-
 // const { create } = require('domain');
 import { createServer } from 'http';
 import express, { json, urlencoded } from 'express';
@@ -16,6 +14,8 @@ import { __basedir } from '../basedir.js';
 
 export class ChatServer {
 
+  DebugLevel = 1;
+
   maxPlayersPerRoom;
   roomPrefix;
 
@@ -31,7 +31,7 @@ export class ChatServer {
   onUserJoinedRoom = (cid, room_info, resp) => { };
   
   constructor(maxPlayersPerRoom, roomPrefix) {
-    console.log("initializing ChatServer");
+    if (this.DebugLevel) console.log("initializing ChatServer");
 
     this.maxPlayersPerRoom = maxPlayersPerRoom ?? 5;
     this.roomPrefix = roomPrefix ?? "room_";
@@ -59,14 +59,14 @@ export class ChatServer {
     // Message received on any channel
     this.bayeux.on('publish', (cid, room, msg) => {
       room = room.substr(1); // remove /
-      console.log("-------- publish ", room, cid, msg);
+      if (this.DebugLevel >= 2) console.log("-------- publish ", room, cid, msg);
       this.onMessagePublished(cid, this.rooms[room], msg);
     });
         
     // Subscribed to a channel
     this.bayeux.on('subscribe', (cid, room) => {
       room = room.substr(1); // remove /
-      console.log("-------- subscribe ", room, cid);
+      if (this.DebugLevel >= 2) console.log("-------- subscribe ", room, cid);
       var room_info = this.rooms[room];
       if (room_info) {
         var user_data = room_info._userData[cid];
@@ -80,7 +80,7 @@ export class ChatServer {
     // Disconnect + unsubscribe
     this.bayeux.on('unsubscribe', (cid, room) => {
       room = room.substr(1); //TODO REGEX
-      console.log("-------- unsubscribe ", room, cid);
+      if (this.DebugLevel >= 2) console.log("-------- unsubscribe ", room, cid);
       var room_info = this.rooms[room];
       if (room_info) {
         var user_data = room_info._userData[cid];
@@ -115,7 +115,7 @@ export class ChatServer {
         
       switch (msg.op) {
         case "joinReq":
-          console.log("Client ID ", cid, " joining room ", msg.room);
+          if (this.DebugLevel >= 2) console.log("Client ID ", cid, " joining room ", msg.room);
           resp.room = this.assignUserToRoom(cid, msg.room);
           if (resp.room)
             this.onUserJoinedRoom(cid, this.rooms[resp.room], resp);
@@ -128,7 +128,7 @@ export class ChatServer {
     });
         
     this.server.listen(port);
-    console.log(`Server up and listening on port ${port}, folder ${publicDir}`);
+    if (this.DebugLevel) console.log(`Server up and listening on port ${port}, folder ${publicDir}`);
 
   }
 

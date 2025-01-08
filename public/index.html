@@ -287,15 +287,15 @@
 
             //const addChatTextLine = (text, delay) => addChatText(text + "<br/>", delay);
 
-            function addChatText (text, delay, bgcolor) {
+            function addChatText (text, delay, bgcolor, mute) {
                 // console.log("Chat:", text, delay);
-                if (delay != undefined && delay > 0)
-                    setTimeout(() => addChatTextExec(text, bgcolor), delay);
+                if (delay)
+                    setTimeout(() => addChatTextExec(text, bgcolor, mute), delay);
                 else
-                    addChatTextExec(text, bgcolor);
+                    addChatTextExec(text, bgcolor, mute);
             }
 
-            function addChatTextExec (text, bgcolor)
+            function addChatTextExec (text, bgcolor, mute)
             {
                 var cb = $('#chatbox');
                 // Are we at the bottom of scroll before addding new text
@@ -304,6 +304,8 @@
                 cb.append(pfx + text + "</div>");
                 if (pushdown)
                     cb.scrollTop(cb[0].scrollHeight);
+                if (!mute)
+                    playAudioSend();
             }
 
             function updateMuteIcon () {
@@ -356,7 +358,7 @@
                         console.log("dispatch resp", data);
                         subscribeToRoom(data.room);
                         playerSlot = data.slot;
-                        addChatText(TEXT_WELCOME_PLAYER.format(playerSlot + 1, COLOR_SLOTS[playerSlot]), 250);
+                        addChatText(TEXT_WELCOME_PLAYER.format(playerSlot + 1, COLOR_SLOTS[playerSlot]), 250, null, waitingForOpp);
                         if (waitingForOpp)
                             addChatText(TEXT_WAIT_FOR_OPP, 400);
                         $('#joindiv').hide();
@@ -398,7 +400,7 @@
             var client = new Faye.Client('/faye',{
                 timeout: 20
             });
-            client.disable('websocket'); // TODO check issues
+            // client.disable('websocket'); // TODO check issues
 
             client.addExtension({
                 incoming: function(message, callback) {
@@ -412,11 +414,10 @@
             });
 
             function subscribeToRoom (room) {
-                addChatText(TEXT_JOINED_ROOM.format(room));
+                addChatText(TEXT_JOINED_ROOM.format(room), null, null, true);
                 currentRoom = room;
                 subscription = client.subscribe(ROOM_PREFIX + currentRoom, function (message) {
                     console.log("Message ====================", message);
-                    playAudioSend();
 
                     switch (message.op) {
                         case "Quit":
@@ -444,11 +445,10 @@
 
             function startNewGame (message) {
                 if (waitingForOpp)
-                    addChatText(TEXT_PLAYER_JOINED);
-                addChatText(TEXT_SEPARATOR, 500);
+                    addChatText(TEXT_PLAYER_JOINED, null, null, true);
+                addChatText(TEXT_SEPARATOR, 500, null, true);
                 addChatText(TEXT_GAME_START, 750, BGCOLOR_SYSTEM);
                 $('#chatinputcontainer').show();    
-                playAudioSend(); 
             }
 
             function playerQuit (message) {
