@@ -15,7 +15,7 @@ const openai = new OpenAI({
 //  Constants
 //
 
-const DebugLevel = 1;
+const DebugLevel = process.env.DEBUG_LEVEL ?? 1;
 
 const NUM_SLOTS_IN_ROOM = ChatConfig.NUM_HUMAN_SLOTS + ChatConfig.NUM_AI_SLOTS;
 
