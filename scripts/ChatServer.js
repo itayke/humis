@@ -14,7 +14,7 @@ import { __basedir } from '../basedir.js';
 
 export class ChatServer {
 
-  DebugLevel = 1;
+  DebugLevel = Number(process.env.DEBUG_LEVEL ?? 1);
 
   maxPlayersPerRoom;
   roomPrefix;
@@ -31,7 +31,6 @@ export class ChatServer {
   onUserJoinedRoom = (cid, room_info, resp) => { };
   
   constructor(maxPlayersPerRoom, roomPrefix) {
-    if (this.DebugLevel) console.log("initializing ChatServer");
 
     this.maxPlayersPerRoom = maxPlayersPerRoom ?? 5;
     this.roomPrefix = roomPrefix ?? "room_";
@@ -94,6 +93,7 @@ export class ChatServer {
         
     const publicDir = `${__basedir}/public`;
     const port = process.env.SERVER_PORT || 3030;
+    if (this.DebugLevel) console.log(`Initializing ChatServer on port ${port}. Log level ${this.DebugLevel}.`);
 
     // Open file server etc
     this.app.use(morgan("combined"));
@@ -123,7 +123,7 @@ export class ChatServer {
         default:
           resp.error = "Unknown command";
       }
-      console.log("Got", msg, "sending", resp);
+      if (this.DebugLevel >= 2) console.log("Got", msg, "sending", resp);
       res.send(resp);
     });
         

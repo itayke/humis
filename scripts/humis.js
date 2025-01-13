@@ -15,7 +15,7 @@ const openai = new OpenAI({
 //  Constants
 //
 
-const DebugLevel = process.env.DEBUG_LEVEL ?? 1;
+const DebugLevel = Number(process.env.DEBUG_LEVEL ?? 1);
 
 const NUM_SLOTS_IN_ROOM = ChatConfig.NUM_HUMAN_SLOTS + ChatConfig.NUM_AI_SLOTS;
 
@@ -329,7 +329,7 @@ function populateMessageHistory(slot, room_info) {
         ChatConfig.AI_MESSAGE_INTRO;
   }
 
-  console.log('Sending: ---->\n', user_message);//
+  if (DebugLevel) console.log('Sending: ---->\n', user_message);//
 
   var messages = [
     {
@@ -400,7 +400,7 @@ async function sendBotMessage(room_info) {
           room_info.names[slot] = nameFromMsg;
       }
 
-      console.log('Response: <----\n', message.content);
+      // if (DebugLevel) console.log('Response: <----\n', message.content);
 
       var waitSec = text.length * ChatConfig.CHATGPT_RESPONSE_WAIT_PER_CHAR;
       if (DebugLevel >= 2) console.log("CHATGPT response", message.content, "=>", text, "Name", room_info.names[slot], "wait=" + waitSec);
